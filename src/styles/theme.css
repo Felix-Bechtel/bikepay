@@ -1,0 +1,166 @@
+/* Velos design tokens — pulled from the Stitch mockups so the look matches.
+   Anywhere in the app that wants the BikePay palette pulls from these vars. */
+
+:root {
+  --bg: #0b1326;
+  --surface: #171f33;
+  --surface-low: #131b2e;
+  --surface-high: #222a3d;
+  --line: rgba(255, 255, 255, 0.10);
+
+  --text: #dae2fd;
+  --muted: #bacac5;
+  --dim: #94a3b8;
+
+  --primary: #57f1db;          /* teal accent */
+  --primary-dim: #3cddc7;
+  --on-primary: #00201c;
+  --secondary: #bdc2ff;
+  --warn: #ffb020;
+  --good: #22c55e;
+  --bad: #ef4444;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100dvh; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* The layered glass card pattern used throughout the Stitch mockups. */
+.glass-card {
+  background: rgba(23, 31, 51, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--line);
+}
+.inner-glow {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.10);
+}
+.teal-glow {
+  text-shadow: 0 0 20px rgba(87, 241, 219, 0.4);
+}
+
+/* Status pills */
+.pill {
+  display: inline-block;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.pill.pending   { background: #3a2d09; color: var(--warn); }
+.pill.confirmed { background: #0d2c1c; color: var(--good); }
+.pill.expired   { background: #1f2937; color: #9ca3af; }
+.pill.failed    { background: #3a0d0d; color: var(--bad); }
+
+/* Modal / sheet */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+.modal.open { display: flex; }
+.sheet {
+  background: var(--surface);
+  width: 100%;
+  max-width: 42rem;
+  border-radius: 2rem 2rem 0 0;
+  padding: 1.4rem 1.4rem calc(1.4rem + env(safe-area-inset-bottom));
+  border: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: #0d2c1c;
+  color: var(--good);
+  border: 1px solid #064e3b;
+  padding: .7rem 1rem;
+  border-radius: 12px;
+  font-size: .85rem;
+  z-index: 60;
+  animation: pop .25s ease;
+}
+.toast.bad { background: #3a0d0d; color: var(--bad); border-color: #7f1d1d; }
+@keyframes pop {
+  from { transform: translate(-50%, 8px); opacity: 0; }
+  to   { transform: translate(-50%, 0);   opacity: 1; }
+}
+
+/* Layout */
+.app-shell {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 4.5rem 1.25rem 7rem;
+}
+.row { display: flex; align-items: center; gap: .6rem; }
+.grow { flex: 1; }
+.muted { color: var(--dim); }
+.hr { height: 1px; background: var(--line); margin: .8rem 0; }
+.stack > * + * { margin-top: .85rem; }
+
+/* Inputs */
+input, textarea, select {
+  width: 100%;
+  padding: .7rem .85rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-low);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+input:focus, textarea:focus { border-color: var(--primary); }
+textarea {
+  min-height: 8rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: .85rem;
+}
+label {
+  display: block;
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: .65rem 0 .25rem;
+}
+
+/* Buttons */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  width: 100%;
+  padding: .95rem 1rem;
+  border-radius: 14px;
+  border: 0;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform .1s ease;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:active   { transform: scale(.98); }
+.btn.secondary { background: transparent; border: 1px solid var(--line); color: var(--text); }
+.btn.danger    { background: #3a0d0d; color: var(--bad); }
+.btn.small     { padding: .55rem .85rem; font-size: .85rem; border-radius: 10px; width: auto; }

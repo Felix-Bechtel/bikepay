@@ -1,0 +1,19 @@
+{
+  "name": "BikePay",
+  "short_name": "BikePay",
+  "description": "Track km, get paid per km. Local-only, on this device.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0b1326",
+  "background_color": "#0b1326",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

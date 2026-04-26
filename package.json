@@ -1,0 +1,32 @@
+{
+  "name": "bikepay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "BikePay — track XOSS km, get paid CAD $0.10/km, SMS-confirmed payouts.",
+  "scripts": {
+    "dev": "concurrently -k -n web,server -c cyan,magenta \"npm:dev:web\" \"npm:dev:server\"",
+    "dev:web": "vite --host 0.0.0.0",
+    "dev:server": "node --watch server/server.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "seed": "node server/seed.mjs",
+    "start": "node server/server.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "nosleep.js": "^0.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "twilio": "^5.3.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "vite": "^5.4.7"
+  }
+}
