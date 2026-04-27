@@ -1,15 +1,9 @@
 import { useSyncExternalStore } from "react";
-import {
-  getCurrentId,
-  findAccount,
-  getAccountData,
-} from "../lib/auth-local.js";
+import { getCurrentId, findAccount } from "../lib/auth-local.js";
 
-// One small external store. Components subscribe via useStore(selector).
-//
-// Every action that mutates a logged-in user's data goes through actions.js,
-// which writes both to this in-memory state AND to localStorage via the
-// auth-local helpers. The store never persists raw data on its own.
+// Components subscribe via useStore(selector). Mutations go through actions.js
+// which writes both to this in-memory state and to localStorage via
+// auth-local. The store itself never persists raw data.
 
 let state = bootInitial();
 const listeners = new Set();
@@ -18,20 +12,21 @@ function bootInitial() {
   const id = getCurrentId();
   const acc = id ? findAccount(id) : null;
   return {
-    currentAccount: acc
-      ? {
-          id: acc.id,
-          email: acc.email,
-          name: acc.name,
-          payoutPhone: acc.payoutPhone,
-          createdTs: acc.createdTs,
-        }
-      : null,
-    data: acc ? acc.data : { sessions: [], withdrawals: [], hideWallet: false },
+    currentAccount: acc ? publicAccount(acc) : null,
+    data: acc?.data || { sessions: [], withdrawals: [], hideWallet: false },
     screen: acc ? "dashboard" : "login",
-    authView: "login", // login | signup
+    authView: "login",
     toast: null,
-    walletResetOverride: localStorage.getItem("bk:walletReset") === "1",
+  };
+}
+
+function publicAccount(a) {
+  return {
+    id: a.id,
+    email: a.email,
+    name: a.name,
+    payoutPhone: a.payoutPhone,
+    createdTs: a.createdTs,
   };
 }
 
@@ -50,33 +45,29 @@ export function subscribe(fn) {
 }
 
 // IMPORTANT: getSnapshot must return a stable reference between calls when
-// state is unchanged. We snapshot the whole state and apply the selector
-// after, so React 18's useSyncExternalStore contract is satisfied.
+// state is unchanged. We snapshot the whole state and apply selectors after,
+// so React 18's useSyncExternalStore contract is satisfied.
 export function useStore(selector = (s) => s) {
   const snap = useSyncExternalStore(subscribe, getState, getState);
   return selector(snap);
 }
 
-// Reload the in-memory account snapshot + data after auth-local mutations.
+// One read of the accounts blob is enough; account.data is in-line.
 export function rehydrateFromAccount() {
   const id = getCurrentId();
-  if (!id) {
-    setState({ currentAccount: null, data: { sessions: [], withdrawals: [], hideWallet: false }, screen: "login" });
-    return;
-  }
+  if (!id) return resetSession();
   const acc = findAccount(id);
-  if (!acc) {
-    setState({ currentAccount: null, data: { sessions: [], withdrawals: [], hideWallet: false }, screen: "login" });
-    return;
-  }
+  if (!acc) return resetSession();
   setState({
-    currentAccount: {
-      id: acc.id,
-      email: acc.email,
-      name: acc.name,
-      payoutPhone: acc.payoutPhone,
-      createdTs: acc.createdTs,
-    },
-    data: getAccountData(acc.id),
+    currentAccount: publicAccount(acc),
+    data: acc.data || { sessions: [], withdrawals: [], hideWallet: false },
+  });
+}
+
+function resetSession() {
+  setState({
+    currentAccount: null,
+    data: { sessions: [], withdrawals: [], hideWallet: false },
+    screen: "login",
   });
 }

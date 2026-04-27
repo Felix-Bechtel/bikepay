@@ -1,26 +1,18 @@
 import { useEffect, useState } from "react";
-import { enable, disable, attachAutoReacquire } from "./wake-lock.js";
+import { enable, disable } from "./wake-lock.js";
 
-// Hook: keep the screen awake. Returns the current backend ("wakeLock",
-// "nosleep", or null) so the UI can show what's active.
+// Hook: keep the screen awake while `enabled` is true. Returns the active
+// backend ("wakeLock" / "nosleep" / null) so callers can show what's working.
 export function useWakeLock(enabled = true) {
   const [backend, setBackend] = useState(null);
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    attachAutoReacquire();
-    // Native Wake Lock: try silently; many browsers actually allow without a
-    // gesture once the document is loaded.
-    enable().then((b) => {
-      if (!cancelled) setBackend(b ?? null);
-    });
-    // NoSleep specifically requires a user gesture, so re-enable on first
-    // pointerdown if our silent attempt didn't fire it.
-    const onTap = () => {
-      enable().then((b) => {
-        if (!cancelled) setBackend(b ?? null);
-      });
-    };
+    const apply = (b) => { if (!cancelled) setBackend(b ?? null); };
+    enable().then(apply);
+    // Some platforms only honor the lock after a user gesture — re-trigger
+    // on the first tap as well.
+    const onTap = () => enable().then(apply);
     document.addEventListener("pointerdown", onTap, { once: true });
     return () => {
       cancelled = true;

@@ -1,5 +1,4 @@
 // CSV → session-input rows. Header: start_ts,end_ts,km[,external_id].
-// Mirrors server/csv.mjs.
 export function parseCsv(text) {
   const lines = String(text || "").trim().split(/\r?\n/);
   if (!lines.length) return [];
@@ -9,8 +8,8 @@ export function parseCsv(text) {
   for (let i = 1; i < lines.length; i++) {
     const parts = lines[i].split(",").map((s) => s.trim());
     if (parts.length < 3) continue;
-    const start = toMs(parts[idx("start_ts")]);
-    const end = toMs(parts[idx("end_ts")]);
+    const start = parseTs(parts[idx("start_ts")]);
+    const end = parseTs(parts[idx("end_ts")]);
     const km = parseFloat(parts[idx("km")]);
     const ext = idx("external_id") >= 0 ? parts[idx("external_id")] : null;
     if (!isFinite(start) || !isFinite(end) || !isFinite(km)) continue;
@@ -25,7 +24,9 @@ export function parseCsv(text) {
   return out;
 }
 
-function toMs(v) {
+// Accepts ms-epoch ints or anything Date.parse handles. Reused by manual
+// session add — keeps timestamp parsing in one place.
+export function parseTs(v) {
   if (!v) return NaN;
   if (/^\d+$/.test(v)) return parseInt(v, 10);
   return Date.parse(v);

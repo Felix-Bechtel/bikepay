@@ -1,11 +1,12 @@
 import { useStore } from "../state/store.js";
 import { showScreen } from "../state/actions.js";
+import { SCREEN } from "../constants.js";
 
 const ITEMS = [
-  { id: "dashboard", label: "Home", icon: HomeIcon },
-  { id: "rides", label: "Rides", icon: BikeIcon },
-  { id: "wallet", label: "Wallet", icon: WalletIcon },
-  { id: "settings", label: "Settings", icon: GearIcon },
+  { id: SCREEN.dashboard, label: "Home", icon: HomeIcon },
+  { id: SCREEN.rides, label: "Rides", icon: BikeIcon },
+  { id: SCREEN.wallet, label: "Wallet", icon: WalletIcon },
+  { id: SCREEN.settings, label: "Settings", icon: GearIcon },
 ];
 
 export function BottomNav() {
@@ -59,33 +60,41 @@ export function BottomNav() {
 
 function HomeIcon({ active }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+    <NavSvg fill={active ? "currentColor" : "none"}>
       <path d="M3 12 12 4l9 8M5 10v10h14V10" />
-    </svg>
+    </NavSvg>
   );
 }
 function BikeIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <NavSvg>
       <circle cx="6" cy="18" r="3" />
       <circle cx="18" cy="18" r="3" />
       <path d="M6 18 12 6h4M14 6h4l2 6" />
-    </svg>
+    </NavSvg>
   );
 }
 function WalletIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <NavSvg>
       <rect x="3" y="6" width="18" height="14" rx="2" />
       <path d="M3 10h18M16 14h2" />
-    </svg>
+    </NavSvg>
   );
 }
 function GearIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <NavSvg>
       <circle cx="12" cy="12" r="3" />
       <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" />
+    </NavSvg>
+  );
+}
+
+function NavSvg({ fill = "none", children }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2">
+      {children}
     </svg>
   );
 }

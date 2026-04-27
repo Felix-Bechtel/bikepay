@@ -1,8 +1,8 @@
 // Local-only multi-account auth, stored in localStorage.
 //
 // Each account: { id, email, name, payoutPhone, salt, hash, createdTs, data }
-// Passwords are hashed with PBKDF2 (SHA-256, 100k iterations) — no plaintext
-// ever touches storage.
+// Passwords are hashed with PBKDF2 (SHA-256, 100k iterations, salted) — no
+// plaintext is ever persisted.
 
 const KEY_ACCOUNTS = "bk:accounts";
 const KEY_CURRENT = "bk:currentAccountId";
@@ -57,9 +57,8 @@ export async function signup({ email, name, password, payoutPhone }) {
 
   const salt = randomHex(16);
   const hash = await pbkdf2(password, salt);
-  const id = randomHex(16);
   const account = {
-    id,
+    id: newId(),
     email: cleaned.email,
     name: cleaned.name,
     payoutPhone: cleaned.payoutPhone,
@@ -71,7 +70,7 @@ export async function signup({ email, name, password, payoutPhone }) {
   const all = loadAll();
   all.push(account);
   saveAll(all);
-  setCurrentId(id);
+  setCurrentId(account.id);
   return publicAccount(account);
 }
 
@@ -86,11 +85,6 @@ export async function login({ email, password }) {
 
 export function logoutLocal() {
   setCurrentId(null);
-}
-
-export function getAccountData(id) {
-  const acc = findAccount(id);
-  return acc?.data || { sessions: [], withdrawals: [], hideWallet: false };
 }
 
 export function setAccountData(id, data) {
@@ -131,24 +125,21 @@ export function deleteAccount(id) {
   if (getCurrentId() === id) setCurrentId(null);
 }
 
-// ---------- helpers ----------
+// ---------- exported helpers (shared by actions.js) ----------
 
-function publicAccount(a) {
-  return {
-    id: a.id,
-    email: a.email,
-    name: a.name,
-    payoutPhone: a.payoutPhone,
-    createdTs: a.createdTs,
-  };
+export function newId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + randomHex(16);
 }
 
-function isEmail(s) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+export function randomHex(bytes) {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return bytesToHex(buf);
 }
 
-// Accept loose input ("(519) 496-0491", "5194960491", "+1 519-496-0491")
-// and normalize to E.164 (+1XXXXXXXXXX). Defaults to country code 1.
+// Loose phone input ("(519) 496-0491", "5194960491", "+1 519-496-0491")
+// normalized to E.164. Defaults to country code 1.
 export function normalizePhone(input) {
   const raw = String(input || "").trim();
   if (!raw) return "";
@@ -171,10 +162,20 @@ export function formatPhone(e164) {
   return e164 || "";
 }
 
-function randomHex(bytes) {
-  const buf = new Uint8Array(bytes);
-  crypto.getRandomValues(buf);
-  return Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join("");
+// ---------- private ----------
+
+function publicAccount(a) {
+  return {
+    id: a.id,
+    email: a.email,
+    name: a.name,
+    payoutPhone: a.payoutPhone,
+    createdTs: a.createdTs,
+  };
+}
+
+function isEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
 async function pbkdf2(password, saltHex) {
@@ -202,6 +203,7 @@ function hexToBytes(hex) {
   }
   return out;
 }
+
 function bytesToHex(b) {
   return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 }

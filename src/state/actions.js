@@ -7,13 +7,13 @@ import {
   updateProfile as authUpdateProfile,
   changePassword as authChangePassword,
   deleteAccount as authDeleteAccount,
+  newId,
+  randomHex,
 } from "../lib/auth-local.js";
 import { computeBalance } from "../lib/compute.js";
 import { buildWithdrawSms } from "../lib/sms-body.js";
 import { parseCsv } from "../lib/csv.js";
-import { WITHDRAW_WINDOW_MS, STORAGE_KEYS } from "../constants.js";
-
-// ---------- screen / toast ----------
+import { WITHDRAW_WINDOW_MS, WITHDRAWAL_STATUS } from "../constants.js";
 
 export function showScreen(screen) {
   setState({ screen });
@@ -29,8 +29,6 @@ export function toast(message, kind = "ok") {
     if (getState().toast?.message === message) setState({ toast: null });
   }, 2200);
 }
-
-// ---------- auth ----------
 
 export async function doSignup(form) {
   await authSignup(form);
@@ -50,7 +48,7 @@ export function doLogout() {
   setState({ screen: "login", authView: "login", currentAccount: null });
 }
 
-export async function saveProfile(patch) {
+export function saveProfile(patch) {
   const id = getState().currentAccount?.id;
   if (!id) return;
   authUpdateProfile(id, patch);
@@ -73,15 +71,11 @@ export function removeAccount() {
   toast("Account deleted");
 }
 
-// ---------- data persistence ----------
-
 function persistData(data) {
   const id = getState().currentAccount?.id;
   if (id) setAccountData(id, data);
   setState({ data });
 }
-
-// ---------- withdrawal ----------
 
 export function startWithdrawal() {
   const s = getState();
@@ -89,7 +83,8 @@ export function startWithdrawal() {
   if (!acc) return;
   const t = computeBalance(s.data);
   if (t.unwithdrawn_km <= 0) return toast("Nothing to withdraw", "bad");
-  const id = uuid();
+
+  const id = newId();
   const now = Date.now();
   const ssAvail = s.data.sessions.filter((x) => !x.withdrawal_id);
   const sessions = s.data.sessions.map((x) =>
@@ -99,8 +94,8 @@ export function startWithdrawal() {
     id,
     km: t.unwithdrawn_km,
     cad: t.cad_balance,
-    status: "pending",
-    proof_token: uuid().replace(/-/g, "") + uuid().replace(/-/g, ""),
+    status: WITHDRAWAL_STATUS.pending,
+    proof_token: randomHex(32),
     created_ts: now,
     expires_ts: now + WITHDRAW_WINDOW_MS,
     confirmed_ts: null,
@@ -111,32 +106,31 @@ export function startWithdrawal() {
       end_ts: x.end_ts,
     })),
   };
-  const data = {
+  persistData({
     ...s.data,
     sessions,
     withdrawals: [w, ...s.data.withdrawals],
-  };
-  persistData(data);
+  });
+
   const body = buildWithdrawSms({
     name: acc.name,
     amountCad: t.cad_balance,
     km: t.unwithdrawn_km,
     proofUrl: "(local proof — open BikePay to view)",
   });
-  // Open the phone's native SMS composer pre-filled.
   location.href = `sms:${acc.payoutPhone}?body=${encodeURIComponent(body)}`;
 }
 
 export function localConfirm(id) {
   const s = getState();
   const w = s.data.withdrawals.find((x) => x.id === id);
-  if (!w || w.status !== "pending") return;
+  if (!w || w.status !== WITHDRAWAL_STATUS.pending) return;
   if (Date.now() > w.expires_ts) return toast("Already expired", "bad");
   persistData({
     ...s.data,
     withdrawals: s.data.withdrawals.map((x) =>
       x.id === id
-        ? { ...x, status: "confirmed", confirmed_ts: Date.now() }
+        ? { ...x, status: WITHDRAWAL_STATUS.confirmed, confirmed_ts: Date.now() }
         : x
     ),
     hideWallet: true,
@@ -150,15 +144,17 @@ export function localExpireSweep() {
   const now = Date.now();
   let changed = false;
   const withdrawals = s.data.withdrawals.map((w) => {
-    if (w.status === "pending" && w.expires_ts <= now) {
+    if (w.status === WITHDRAWAL_STATUS.pending && w.expires_ts <= now) {
       changed = true;
-      return { ...w, status: "expired" };
+      return { ...w, status: WITHDRAWAL_STATUS.expired };
     }
     return w;
   });
   if (!changed) return;
   const expiredIds = new Set(
-    withdrawals.filter((w) => w.status === "expired").map((w) => w.id)
+    withdrawals
+      .filter((w) => w.status === WITHDRAWAL_STATUS.expired)
+      .map((w) => w.id)
   );
   const sessions = s.data.sessions.map((x) =>
     expiredIds.has(x.withdrawal_id) ? { ...x, withdrawal_id: null } : x
@@ -166,16 +162,14 @@ export function localExpireSweep() {
   persistData({ ...s.data, sessions, withdrawals });
 }
 
-// ---------- sessions ----------
-
 export function addManualSession({ start_ts, end_ts, km }) {
   const s = getState();
   if (!s.currentAccount) return;
-  const data = {
+  persistData({
     ...s.data,
     sessions: [
       {
-        id: uuid(),
+        id: newId(),
         source: "manual",
         external_id: null,
         start_ts,
@@ -185,8 +179,7 @@ export function addManualSession({ start_ts, end_ts, km }) {
       },
       ...s.data.sessions,
     ],
-  };
-  persistData(data);
+  });
   toast("Added");
 }
 
@@ -200,19 +193,17 @@ export function importCsv(csv) {
   const added = [];
   for (const row of rows) {
     if (row.external_id && known.has(row.external_id)) continue;
-    added.push({ ...row, id: uuid(), withdrawal_id: null });
+    added.push({ ...row, id: newId(), withdrawal_id: null });
   }
   persistData({ ...s.data, sessions: [...added, ...s.data.sessions] });
   toast(`Imported ${added.length}`);
 }
 
+// Re-show the wallet card on the active account (was hidden after first
+// confirmed withdrawal per spec).
 export function resetWalletOverride() {
-  setState({ walletResetOverride: true });
-  localStorage.setItem(STORAGE_KEYS.walletReset, "1");
-}
-
-function uuid() {
-  return crypto.randomUUID
-    ? crypto.randomUUID()
-    : "id-" + Math.random().toString(36).slice(2) + Date.now();
+  const s = getState();
+  if (!s.currentAccount) return;
+  if (!s.data.hideWallet) return;
+  persistData({ ...s.data, hideWallet: false });
 }

@@ -11,18 +11,16 @@ import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { RidesPage } from "./pages/RidesPage.jsx";
 import { WalletPage } from "./pages/WalletPage.jsx";
 import { SettingsPage } from "./pages/SettingsPage.jsx";
+import { SCREEN } from "./constants.js";
 
 export function App() {
-  const { account, screen, authView } = useStore((s) => ({
-    account: s.currentAccount,
-    screen: s.screen,
-    authView: s.authView,
-  }));
+  const account = useStore((s) => s.currentAccount);
+  const screen = useStore((s) => s.screen);
+  const authView = useStore((s) => s.authView);
   const loggedIn = !!account;
 
   useWakeLock(loggedIn);
 
-  // Client-side expiry sweep every 30s.
   useEffect(() => {
     if (!loggedIn) return;
     const t = setInterval(localExpireSweep, 30_000);
@@ -41,10 +39,10 @@ export function App() {
   return (
     <>
       <TopBar />
-      {screen === "dashboard" && <DashboardPage />}
-      {screen === "rides" && <RidesPage />}
-      {screen === "wallet" && <WalletPage />}
-      {screen === "settings" && <SettingsPage />}
+      {screen === SCREEN.dashboard && <DashboardPage />}
+      {screen === SCREEN.rides && <RidesPage />}
+      {screen === SCREEN.wallet && <WalletPage />}
+      {screen === SCREEN.settings && <SettingsPage />}
       <BottomNav />
       <Toast />
     </>

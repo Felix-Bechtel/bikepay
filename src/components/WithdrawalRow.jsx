@@ -3,9 +3,11 @@ import { fmtCad, fmtKm, isoShort } from "../lib/format.js";
 import { Pill } from "./Pill.jsx";
 import { Countdown } from "./Countdown.jsx";
 import { localConfirm } from "../state/actions.js";
+import { WITHDRAWAL_STATUS } from "../constants.js";
 
 export function WithdrawalRow({ withdrawal: w }) {
   const [open, setOpen] = useState(false);
+  const isPending = w.status === WITHDRAWAL_STATUS.pending;
   return (
     <div
       className="glass-card"
@@ -23,7 +25,7 @@ export function WithdrawalRow({ withdrawal: w }) {
         </div>
         <div style={{ textAlign: "right" }}>
           <Pill status={w.status} />
-          {w.status === "pending" && (
+          {isPending && (
             <div style={{ marginTop: 4 }}>
               <Countdown expiresTs={w.expires_ts} />
             </div>
@@ -34,7 +36,7 @@ export function WithdrawalRow({ withdrawal: w }) {
         <div style={{ marginTop: ".7rem", color: "var(--dim)", fontSize: ".8rem" }}>
           <div>Expires: {isoShort(w.expires_ts)}</div>
           {w.confirmed_ts && <div>Confirmed: {isoShort(w.confirmed_ts)}</div>}
-          {w.status === "pending" && (
+          {isPending && (
             <button
               className="btn small"
               style={{ marginTop: ".6rem" }}

@@ -8,23 +8,19 @@ import { InstallCard } from "../components/InstallCard.jsx";
 import { computeBalance, shouldHideWallet } from "../lib/compute.js";
 import { fmtCad, fmtKm } from "../lib/format.js";
 import { startWithdrawal } from "../state/actions.js";
-import { CAD_PER_KM } from "../constants.js";
+import { CAD_PER_KM, WITHDRAWAL_STATUS } from "../constants.js";
 import { formatPhone } from "../lib/auth-local.js";
 
 const MILESTONE_KM = 1500;
 
 export function DashboardPage() {
-  const { data, walletResetOverride, account } = useStore((s) => ({
-    data: s.data,
-    walletResetOverride: s.walletResetOverride,
-    account: s.currentAccount,
-  }));
+  const data = useStore((s) => s.data);
+  const account = useStore((s) => s.currentAccount);
   const t = computeBalance(data);
-  const hideWallet = shouldHideWallet({
-    withdrawals: data.withdrawals,
-    walletResetOverride,
-  });
-  const pending = (data.withdrawals || []).filter((w) => w.status === "pending");
+  const hideWallet = shouldHideWallet(data);
+  const pending = (data.withdrawals || []).filter(
+    (w) => w.status === WITHDRAWAL_STATUS.pending
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
@@ -47,7 +43,7 @@ export function DashboardPage() {
           </div>
           <div className="row" style={{ marginTop: ".9rem", gap: ".7rem" }}>
             <MiniStat label="Unwithdrawn" value={fmtKm(t.unwithdrawn_km)} unit="km" />
-            <MiniStat label="Rate" value={`$${CAD_PER_KM.toFixed(2)}`} unit="/ km" />
+            <MiniStat label="Rate" value={fmtCad(CAD_PER_KM)} unit="/ km" />
           </div>
           <button
             className="btn"

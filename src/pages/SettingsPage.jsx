@@ -14,6 +14,7 @@ import {
   toast,
 } from "../state/actions.js";
 import { CAD_PER_KM } from "../constants.js";
+import { fmtCad } from "../lib/format.js";
 import { formatPhone } from "../lib/auth-local.js";
 
 export function SettingsPage() {
@@ -34,7 +35,7 @@ export function SettingsPage() {
 
       <GlassCard>
         <h2 style={{ margin: 0, fontSize: "1rem" }}>Preferences</h2>
-        <Row label="Rate" value={`$${CAD_PER_KM.toFixed(2)} / km`} />
+        <Row label="Rate" value={`${fmtCad(CAD_PER_KM)} / km`} />
         <Row label="Storage" value="On this device only" />
         <div className="row" style={{ marginTop: ".75rem", gap: ".5rem", flexWrap: "wrap" }}>
           <button className="btn small secondary" onClick={resetWalletOverride}>

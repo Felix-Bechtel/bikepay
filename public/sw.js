@@ -1,8 +1,8 @@
-// Minimal service worker. The scope is whatever URL it's registered under
-// (root in dev, /bikepay/ on GitHub Pages). Caches the app shell so the PWA
-// keeps working when the host server is unreachable.
+// Minimal service worker. Caches the same-origin app shell so the PWA keeps
+// working when the host is unreachable. Cross-origin requests (Google Fonts
+// etc.) pass through untouched — no cache bloat from third-party assets.
 
-const CACHE = "bikepay-v2";
+const CACHE = "bikepay-v3";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -22,10 +22,11 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Network-first with cache fallback.
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // skip third-party
   e.respondWith(
     fetch(req)
       .then((r) => {

@@ -1,8 +1,6 @@
-import { CAD_PER_KM } from "../constants.js";
+import { CAD_PER_KM, WITHDRAWAL_STATUS } from "../constants.js";
 
 // Pure: given sessions + withdrawals, return the balance shape used by the UI.
-// Identical formula to server/reducer.mjs#totals so server-mode and standalone
-// match.
 export function computeBalance({ sessions = [], withdrawals = [] }) {
   const wMap = new Map(withdrawals.map((w) => [w.id, w]));
   let total = 0,
@@ -11,8 +9,8 @@ export function computeBalance({ sessions = [], withdrawals = [] }) {
   for (const s of sessions) {
     total += s.km;
     const w = s.withdrawal_id ? wMap.get(s.withdrawal_id) : null;
-    if (w?.status === "pending") pending += s.km;
-    else if (w?.status === "confirmed") confirmed += s.km;
+    if (w?.status === WITHDRAWAL_STATUS.pending) pending += s.km;
+    else if (w?.status === WITHDRAWAL_STATUS.confirmed) confirmed += s.km;
   }
   const unwithdrawn = +(total - pending - confirmed).toFixed(3);
   return {
@@ -25,9 +23,8 @@ export function computeBalance({ sessions = [], withdrawals = [] }) {
   };
 }
 
-// Spec: hide wallet card after the first confirmed withdrawal, unless the
-// user reset that override.
-export function shouldHideWallet({ withdrawals = [], walletResetOverride = false }) {
-  if (walletResetOverride) return false;
-  return withdrawals.some((w) => w.status === "confirmed");
+// Spec: hide wallet card after the first confirmed withdrawal. The flag
+// lives per-account on `data.hideWallet`; flipping it via Settings re-shows.
+export function shouldHideWallet(data) {
+  return !!data?.hideWallet;
 }

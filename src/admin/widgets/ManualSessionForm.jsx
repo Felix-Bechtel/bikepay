@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { GlassCard } from "../../components/GlassCard.jsx";
 import { addManualSession, toast } from "../../state/actions.js";
+import { parseTs } from "../../lib/csv.js";
 
-// Owner-only: add a single ride session by hand.
 export function ManualSessionForm() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -32,10 +32,4 @@ export function ManualSessionForm() {
       <button className="btn small" onClick={submit}>Add</button>
     </GlassCard>
   );
-}
-
-function parseTs(v) {
-  if (!v) return NaN;
-  if (/^\d+$/.test(v)) return parseInt(v, 10);
-  return Date.parse(v);
 }
